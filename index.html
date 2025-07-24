@@ -283,8 +283,10 @@
     
     <footer class="bg-slate-800 text-slate-300 mt-20">
         <div class="container mx-auto px-6 py-8 text-center">
-            <p>Một ứng dụng web tương tác dựa trên báo cáo phân tích về hiện tượng Hallucination trong LLM.</p>
-            <p class="text-sm text-slate-400 mt-2">Mục đích: Giáo dục và nâng cao nhận thức.</p>
+            <p>Ứng dụng được thực hiện bởi <span class="font-semibold text-white">AI4Life Community</span> trên Beincom.</p>
+            <a href="https://group.beincom.com/ref/yVanIt?type=personal" target="_blank" rel="noopener noreferrer" class="text-sm text-slate-400 mt-2 hover:text-blue-400 transition-colors">
+                Truy cập Beincom để đọc tin về AI miễn phí.
+            </a>
         </div>
     </footer>
 
@@ -490,7 +492,7 @@
                 tabDevs.classList.add('active');
                 tabUsers.classList.remove('active');
                 contentDevs.classList.remove('hidden');
-                contentUsers.classList.add('hidden');
+                contentUsers.add('hidden');
             });
             
             tabUsers.classList.add('active');
