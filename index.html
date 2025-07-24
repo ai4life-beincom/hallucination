@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="vi" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khám phá Hallucination trong LLM: Bản chất, Cơ chế & Giải pháp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: "Calm Neutral Tech" - A palette using warm grays (slate), a soft off-white background, and a calming but clear blue for accents and interactive elements. This creates a professional, focused, and trustworthy atmosphere suitable for a technical report. -->
+    <!-- Application Structure Plan: The SPA is designed as a narrative journey, guiding the user from foundational concepts to practical solutions, rather than a rigid report structure.
+        1.  **Hero Section:** Grabs attention with the core thesis: "Hallucination is a feature, not a bug."
+        2.  **"What is it?" Section (Bản chất):** Uses interactive cards to break down complex definitions (Factuality vs. Faithfulness, Intrinsic vs. Extrinsic), making them digestible and less intimidating.
+        3.  **"Why does it happen?" Section (Cơ chế):** Employs visual diagrams (built with HTML/CSS) to explain abstract technical processes like token generation and the role of training data. This caters to visual learners.
+        4.  **"How to manage it?" Section (Giải pháp):** The core interactive element. A dashboard-like comparison tool allows users to actively select and compare mitigation strategies. This transforms a static table into an engaging learning tool, empowering the user to explore the data.
+        5.  **"What to do?" Section (Khuyến nghị):** Provides clear, actionable advice using a tabbed layout to separate audiences (Users vs. Developers), making the information immediately relevant.
+        This non-linear, thematic structure prioritizes user discovery and understanding over the linear progression of the source document. -->
+    <!-- Visualization & Content Choices:
+        - **Report Info:** Definitions of Hallucination types. -> **Goal:** Inform/Organize. -> **Viz/Method:** Interactive HTML cards with hover effects. -> **Interaction:** User hover reveals details. -> **Justification:** Breaks down dense text into memorable, bite-sized chunks. -> **Library:** HTML/Tailwind.
+        - **Report Info:** Autoregressive token generation process. -> **Goal:** Explain a process. -> **Viz/Method:** HTML/CSS flow diagram. -> **Interaction:** Static visual aid. -> **Justification:** Simplifies a complex abstract concept visually without needing complex graphics. -> **Library:** HTML/Tailwind.
+        - **Report Info:** Comparison table of mitigation strategies. -> **Goal:** Compare/Evaluate. -> **Viz/Method:** Interactive list coupled with a dynamic horizontal bar chart (Chart.js) and text descriptions. -> **Interaction:** User clicks on a strategy name to update the chart and detailed text panel. -> **Justification:** Transforms static data into an interactive exploration tool, allowing for direct comparison and deeper analysis. -> **Library:** Chart.js, Vanilla JS.
+        - **Report Info:** Recommendations for users and developers. -> **Goal:** Organize/Advise. -> **Viz/Method:** Tabbed HTML content area. -> **Interaction:** User clicks tabs to switch content. -> **Justification:** Clearly separates information for different target audiences, improving relevance and usability. -> **Library:** Vanilla JS.
+        - **CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+            color: #334155; /* slate-700 */
+        }
+        .nav-link {
+            transition: color 0.3s, border-bottom-color 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #2563eb; /* blue-600 */
+            border-bottom-color: #2563eb;
+        }
+        .card {
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .solution-item.active {
+            background-color: #dbeafe; /* blue-100 */
+            color: #1e40af; /* blue-800 */
+            font-weight: 600;
+        }
+        .tab.active {
+            border-color: #2563eb;
+            color: #2563eb;
+            background-color: white;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <a href="#" class="text-xl font-bold text-slate-800">Phân tích Hallucination</a>
+            <div class="hidden md:flex space-x-8">
+                <a href="#nature" class="nav-link pb-1">Bản chất</a>
+                <a href="#mechanism" class="nav-link pb-1">Cơ chế</a>
+                <a href="#solutions" class="nav-link pb-1">Giải pháp</a>
+                <a href="#recommendations" class="nav-link pb-1">Khuyến nghị</a>
+            </div>
+            <div class="md:hidden">
+                <select id="mobile-nav" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="#home">Trang chủ</option>
+                    <option value="#nature">Bản chất</option>
+                    <option value="#mechanism">Cơ chế</option>
+                    <option value="#solutions">Giải pháp</option>
+                    <option value="#recommendations">Khuyến nghị</option>
+                </select>
+            </div>
+        </nav>
+    </header>
+
+    <main id="home" class="container mx-auto px-6 py-12 md:py-20">
+
+        <section class="text-center mb-20">
+            <h1 class="text-4xl md:text-6xl font-bold text-slate-900 mb-4 leading-tight">
+                Hallucination: <span class="text-blue-600">Đặc tính</span>, không phải <span class="text-red-500">Lỗi</span>
+            </h1>
+            <p class="max-w-3xl mx-auto text-lg text-slate-600 mb-8">
+                Một góc nhìn chuyên sâu về hiện tượng "ảo giác" của AI. Thay vì cố gắng "cấm đoán", chúng ta cần hiểu rõ bản chất để quản lý và khai thác hiệu quả các mô hình ngôn ngữ lớn.
+            </p>
+            <a href="#nature" class="bg-blue-600 text-white font-semibold px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                Bắt đầu khám phá
+            </a>
+        </section>
+
+        <section id="nature" class="py-16 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-800">Bản chất của Hallucination là gì?</h2>
+                <p class="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">Đây không phải là lỗi, mà là hệ quả từ chính cách AI được thiết kế để sáng tạo và linh hoạt. Hãy cùng phân loại để hiểu rõ hơn.</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-white p-8 rounded-xl shadow-md card">
+                    <h3 class="text-2xl font-semibold text-blue-700 mb-4">Phân loại theo Mức độ Trung thực</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-bold text-slate-800">1. Hallucination về Tính xác thực (Factuality)</h4>
+                            <p class="text-slate-600">Nội dung AI tạo ra mâu thuẫn với sự thật có thể kiểm chứng trong thế giới thực. Ví dụ: "Neil Armstrong đặt chân lên Sao Hỏa."</p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800">2. Hallucination về Tính trung thành (Faithfulness)</h4>
+                            <p class="text-slate-600">Nội dung AI tạo ra không tuân thủ hoặc mâu thuẫn với thông tin, chỉ dẫn được cung cấp trong prompt. Ví dụ: Yêu cầu tóm tắt văn bản A, nhưng AI lại thêm chi tiết từ bên ngoài vào.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-md card">
+                    <h3 class="text-2xl font-semibold text-green-700 mb-4">Phân loại theo Nguồn gốc</h3>
+                     <div class="space-y-4">
+                        <div>
+                            <h4 class="font-bold text-slate-800">1. Hallucination Nội tại (Intrinsic)</h4>
+                            <p class="text-slate-600">Đầu ra mâu thuẫn trực tiếp với thông tin nguồn được cung cấp. Đây là lỗi diễn giải thông tin có sẵn.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800">2. Hallucination Ngoại tại (Extrinsic)</h4>
+                            <p class="text-slate-600">AI tự bịa đặt thêm thông tin không thể xác minh từ nguồn. Những chi tiết này thường nghe hợp lý nhưng hoàn toàn là sản phẩm tưởng tượng.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+             <div class="mt-12 bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-r-lg">
+                <p class="text-yellow-800"><span class="font-bold">So sánh cốt lõi:</span> Hallucination của AI khác biệt với tin giả của con người ở <span class="font-semibold">"chủ ý"</span>. AI không có ý định lừa dối; nó chỉ đơn thuần là một cỗ máy xác suất đang thực hiện nhiệm vụ "hoàn thành câu" một cách hợp lý nhất về mặt thống kê.</p>
+            </div>
+        </section>
+
+        <section id="mechanism" class="py-16 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-800">Tại sao Hallucination xảy ra?</h2>
+                <p class="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">Nó bắt nguồn từ 3 yếu tố chính: cơ chế sinh từ, chất lượng dữ liệu huấn luyện và những hạn chế cố hữu trong kiến trúc của mô hình.</p>
+            </div>
+            <div class="grid lg:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-md card">
+                    <h3 class="text-xl font-semibold text-slate-800 mb-3">1. Cơ chế Sinh chuỗi Xác suất</h3>
+                    <p class="text-slate-600 mb-4">AI không "viết" câu, mà dự đoán từ tiếp theo (token) dựa trên xác suất. Một lựa chọn sai ở bước đầu có thể dẫn đến "hiệu ứng thác đổ", kéo toàn bộ câu trả lời đi sai hướng.</p>
+                    <div class="font-mono text-xs p-4 bg-slate-100 rounded-lg text-slate-700 space-y-2">
+                        <p>Prompt: "Thủ đô của Việt Nam là..."</p>
+                        <div class="flex items-center space-x-2">
+                            <span>➡️</span>
+                            <span class="bg-blue-200 px-2 py-1 rounded">Hà</span>
+                            <span class="text-slate-400">(P=0.95)</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span>➡️</span>
+                            <span class="bg-blue-200 px-2 py-1 rounded">Nội</span>
+                             <span class="text-slate-400">(P=0.98 | "Hà")</span>
+                        </div>
+                        <div class="flex items-center space-x-2 text-red-500">
+                             <span>➡️</span>
+                             <span class="bg-red-200 px-2 py-1 rounded">Sai</span>
+                             <span class="text-slate-400">(P=0.01) 💥 Lỗi bắt đầu</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md card">
+                    <h3 class="text-xl font-semibold text-slate-800 mb-3">2. Dữ liệu Huấn luyện</h3>
+                    <p class="text-slate-600">Nguyên tắc "rác đầu vào, rác đầu ra" được áp dụng triệt để:</p>
+                    <ul class="list-disc list-inside space-y-2 mt-4 text-slate-600">
+                        <li><span class="font-semibold">Nhiễu & Sai sót:</span> Dữ liệu từ internet chứa đầy thông tin sai, lỗi thời, và thiên kiến.</li>
+                        <li><span class="font-semibold">Khoảng trống kiến thức:</span> Các chủ đề mới hoặc chuyên ngành hẹp không có đủ dữ liệu.</li>
+                        <li><span class="font-semibold">Không phân biệt thật/giả:</span> AI học cả văn phong của bài báo khoa học lẫn tiểu thuyết viễn tưởng như nhau.</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md card">
+                    <h3 class="text-xl font-semibold text-slate-800 mb-3">3. Hạn chế Kiến trúc</h3>
+                    <p class="text-slate-600">LLM thiếu những khả năng cơ bản của con người:</p>
+                     <ul class="list-disc list-inside space-y-2 mt-4 text-slate-600">
+                        <li><span class="font-semibold">Không có "Mô hình Thế giới":</span> AI không hiểu khái niệm, chỉ nhận diện mẫu từ ngữ.</li>
+                        <li><span class="font-semibold">Không thể nói "Tôi không biết":</span> Việc bịa ra một câu trả lời hợp lý thường "dễ" hơn là thừa nhận thiếu kiến thức.</li>
+                        <li><span class="font-semibold">Thiếu Siêu nhận thức:</span> AI không thể tự "suy nghĩ về suy nghĩ của mình" để đánh giá độ tin cậy của câu trả lời.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="solutions" class="py-16 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-800">Làm thế nào để Quản lý Hallucination?</h2>
+                <p class="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">Thay vì những "câu lệnh cấm" vô hiệu, hãy khám phá các phương pháp tiếp cận có hệ thống, từ kỹ thuật prompt đến kiến trúc hệ thống.</p>
+            </div>
+            <div class="grid lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1">
+                    <h3 class="font-semibold text-lg mb-3 text-slate-800">Chọn một phương pháp để so sánh:</h3>
+                    <ul id="solution-list" class="space-y-2">
+                    </ul>
+                </div>
+                <div class="lg:col-span-2 bg-white p-6 md:p-8 rounded-xl shadow-lg">
+                    <h3 id="solution-title" class="text-2xl font-bold text-blue-700 mb-4"></h3>
+                    <p id="solution-description" class="text-slate-600 mb-6"></p>
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <h4 class="font-semibold text-green-600 mb-2">Ưu điểm</h4>
+                            <ul id="solution-pros" class="list-disc list-inside space-y-1 text-slate-600"></ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-red-600 mb-2">Nhược điểm</h4>
+                            <ul id="solution-cons" class="list-disc list-inside space-y-1 text-slate-600"></ul>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="effectiveness-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="recommendations" class="py-16 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-800">Khuyến nghị Thực tiễn</h2>
+                <p class="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">Hành động cụ thể cho từng đối tượng để tương tác với AI một cách an toàn và hiệu quả hơn.</p>
+            </div>
+            
+            <div>
+                <div class="border-b border-gray-200 mb-6">
+                    <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                        <button id="tab-users" class="tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg">
+                            Dành cho Người dùng
+                        </button>
+                        <button id="tab-devs" class="tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                            Dành cho Nhà phát triển
+                        </button>
+                    </nav>
+                </div>
+
+                <div id="content-users" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h4 class="font-bold text-slate-800 mb-2">Giả định không tin cậy</h4>
+                        <p class="text-slate-600">Luôn coi mọi đầu ra của AI là chưa được xác minh. Không bao giờ tin tưởng mù quáng, đặc biệt với các thông tin quan trọng.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h4 class="font-bold text-slate-800 mb-2">Prompt Cụ thể & Giàu ngữ cảnh</h4>
+                        <p class="text-slate-600">Tránh câu hỏi mơ hồ. Cung cấp càng nhiều bối cảnh, chi tiết và yêu cầu cụ thể càng tốt để định hướng cho AI.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h4 class="font-bold text-slate-800 mb-2">Sử dụng Kỹ thuật Xác minh</h4>
+                        <p class="text-slate-600">Yêu cầu AI trích dẫn nguồn, sau đó tự kiểm tra nguồn đó. Hỏi cùng một câu hỏi theo nhiều cách khác nhau để kiểm tra tính nhất quán.</p>
+                    </div>
+                </div>
+
+                <div id="content-devs" class="hidden grid md:grid-cols-2 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h4 class="font-bold text-slate-800 mb-2">Triển khai RAG làm Mặc định</h4>
+                        <p class="text-slate-600">Với các ứng dụng yêu cầu tính xác thực cao, Retrieval-Augmented Generation (RAG) nên là kiến trúc cốt lõi để neo giữ câu trả lời vào dữ liệu đáng tin cậy.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h4 class="font-bold text-slate-800 mb-2">Tích hợp Lớp Bảo vệ (Guardrails)</h4>
+                        <p class="text-slate-600">Xây dựng các bước kiểm tra sau xử lý, ví dụ: dùng một LLM khác làm "nhà phê bình" để đánh giá tính trung thực của câu trả lời so với nguồn được truy xuất.</p>
+                    </div>
+                     <div class="bg-white p-6 rounded-lg shadow">
+                        <h4 class="font-bold text-slate-800 mb-2">Ưu tiên Ghi nhận Nguồn</h4>
+                        <p class="text-slate-600">Thiết kế hệ thống luôn hiển thị rõ ràng nguồn gốc thông tin. Điều này trao quyền cho người dùng tự xác minh và xây dựng lòng tin.</p>
+                    </div>
+                     <div class="bg-white p-6 rounded-lg shadow">
+                        <h4 class="font-bold text-slate-800 mb-2">Thiết kế UI Khuyến khích Phản biện</h4>
+                        <p class="text-slate-600">Giao diện người dùng cần chủ động ngăn cản sự tin tưởng mù quáng. Gắn nhãn "Nội dung do AI tạo", làm nổi bật các liên kết nguồn.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    
+    <footer class="bg-slate-800 text-slate-300 mt-20">
+        <div class="container mx-auto px-6 py-8 text-center">
+            <p>Một ứng dụng web tương tác dựa trên báo cáo phân tích về hiện tượng Hallucination trong LLM.</p>
+            <p class="text-sm text-slate-400 mt-2">Mục đích: Giáo dục và nâng cao nhận thức.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const solutionsData = [
+                {
+                    id: 'prohibition',
+                    name: 'Prompt Cấm Bịa',
+                    description: 'Sử dụng các lệnh đơn giản yêu cầu AI không nói dối hoặc bịa đặt, ví dụ: "Không được bịa đặt thông tin".',
+                    pros: ['Dễ thực hiện, không cần kỹ thuật phức tạp.'],
+                    cons: [
+                        'Hoàn toàn không hiệu quả vì AI không hiểu khái niệm "sự thật".',
+                        'Có thể gây hại bằng cách tạo ra cảm giác an toàn giả tạo.'
+                    ],
+                    effectiveness: 1,
+                    effectivenessLabel: 'Rất thấp'
+                },
+                {
+                    id: 'advanced_prompting',
+                    name: 'Kỹ thuật Prompt Nâng cao',
+                    description: 'Sử dụng các kỹ thuật như Chuỗi Tư duy (Chain-of-Thought) hoặc Chuỗi Xác minh (Chain-of-Verification) để hướng dẫn quy trình suy luận của mô hình.',
+                    pros: [
+                        'Cải thiện đáng kể khả năng suy luận và độ chính xác.',
+                        'Không yêu cầu hạ tầng kỹ thuật bên ngoài.'
+                    ],
+                    cons: [
+                        'Tăng độ trễ và chi phí tính toán.',
+                        'Đòi hỏi người dùng phải có kỹ năng thiết kế prompt phức tạp.'
+                    ],
+                    effectiveness: 3,
+                    effectivenessLabel: 'Trung bình đến Cao'
+                },
+                {
+                    id: 'rag',
+                    name: 'Retrieval-Augmented Generation (RAG)',
+                    description: 'Neo giữ câu trả lời của AI vào một cơ sở kiến thức bên ngoài, đáng tin cậy. Hệ thống sẽ truy xuất thông tin liên quan trước, sau đó yêu cầu AI trả lời dựa trên thông tin đó.',
+                    pros: [
+                        'Độ chính xác thực tế rất cao.',
+                        'Cho phép sử dụng thông tin cập nhật, độc quyền.',
+                        'Có khả năng trích dẫn nguồn cụ thể.'
+                    ],
+                    cons: [
+                        'Hệ thống phức tạp và tốn kém để xây dựng, bảo trì.',
+                        'Tạo ra các điểm lỗi mới (lỗi truy xuất, lỗi dữ liệu nguồn).'
+                    ],
+                    effectiveness: 4.5,
+                    effectivenessLabel: 'Cao đến Rất cao'
+                },
+                {
+                    id: 'fine_tuning',
+                    name: 'Tinh chỉnh Mô hình (Fine-Tuning)',
+                    description: 'Huấn luyện bổ sung mô hình trên một bộ dữ liệu chuyên ngành, chất lượng cao để nó "học" sâu hơn về một lĩnh vực cụ thể.',
+                    pros: [
+                        'Độ chính xác rất cao trong lĩnh vực được tinh chỉnh.',
+                        'Cải thiện văn phong và thuật ngữ chuyên ngành.'
+                    ],
+                    cons: [
+                        'Rất tốn kém về tài nguyên tính toán.',
+                        'Nguy cơ "quên" kiến thức chung (catastrophic forgetting).',
+                        'Có thể làm tệ hơn tính xác thực trên các chủ đề ngoài bộ dữ liệu tinh chỉnh.'
+                    ],
+                    effectiveness: 4,
+                    effectivenessLabel: 'Cao (trong phạm vi hẹp)'
+                },
+                {
+                    id: 'human_loop',
+                    name: 'Giám sát & Phản hồi (Human-in-the-Loop)',
+                    description: 'Con người trực tiếp xem xét, chỉnh sửa và phê duyệt các câu trả lời của AI trước khi chúng đến tay người dùng cuối.',
+                    pros: ['Tiêu chuẩn vàng về độ chính xác và an toàn.'],
+                    cons: [
+                        'Rất chậm, tốn kém nhân lực.',
+                        'Không thể mở rộng quy mô cho các ứng dụng thời gian thực.'
+                    ],
+                    effectiveness: 5,
+                    effectivenessLabel: 'Rất cao'
+                }
+            ];
+
+            const solutionList = document.getElementById('solution-list');
+            const titleEl = document.getElementById('solution-title');
+            const descriptionEl = document.getElementById('solution-description');
+            const prosEl = document.getElementById('solution-pros');
+            const consEl = document.getElementById('solution-cons');
+            const chartCanvas = document.getElementById('effectiveness-chart');
+            let effectivenessChart;
+
+            function updateSolutionContent(solutionId) {
+                const solution = solutionsData.find(s => s.id === solutionId);
+                if (!solution) return;
+
+                titleEl.textContent = solution.name;
+                descriptionEl.textContent = solution.description;
+
+                prosEl.innerHTML = solution.pros.map(pro => `<li>${pro}</li>`).join('');
+                consEl.innerHTML = solution.cons.map(con => `<li>${con}</li>`).join('');
+
+                if (effectivenessChart) {
+                    effectivenessChart.data.datasets[0].data = [solution.effectiveness];
+                    effectivenessChart.data.labels = [solution.effectivenessLabel];
+                    effectivenessChart.update();
+                }
+                
+                document.querySelectorAll('#solution-list .solution-item').forEach(item => {
+                    item.classList.toggle('active', item.dataset.id === solutionId);
+                });
+            }
+
+            function initializeChart() {
+                const initialData = solutionsData[0];
+                const ctx = chartCanvas.getContext('2d');
+                effectivenessChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [initialData.effectivenessLabel],
+                        datasets: [{
+                            label: 'Mức độ hiệu quả',
+                            data: [initialData.effectiveness],
+                            backgroundColor: ['#3b82f6'],
+                            borderColor: ['#2563eb'],
+                            borderWidth: 1,
+                            barPercentage: 0.5,
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                max: 5,
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    stepSize: 1,
+                                    callback: function(value, index, values) {
+                                        const labels = ['Bắt đầu', 'Rất thấp', 'Thấp', 'Trung bình', 'Cao', 'Rất cao'];
+                                        return labels[value];
+                                    }
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            title: {
+                                display: true,
+                                text: 'Đánh giá Mức độ Hiệu quả Giảm thiểu Hallucination',
+                                font: {
+                                    size: 16,
+                                    weight: 'bold'
+                                },
+                                color: '#334155',
+                                padding: {
+                                    bottom: 20
+                                }
+                            },
+                            tooltip: {
+                                enabled: false
+                            }
+                        }
+                    }
+                });
+            }
+
+            solutionsData.forEach(solution => {
+                const li = document.createElement('li');
+                li.innerHTML = `<button data-id="${solution.id}" class="solution-item w-full text-left p-3 rounded-lg transition-colors hover:bg-slate-100">${solution.name}</button>`;
+                solutionList.appendChild(li);
+            });
+
+            solutionList.addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (button && button.dataset.id) {
+                    updateSolutionContent(button.dataset.id);
+                }
+            });
+            
+            initializeChart();
+            updateSolutionContent(solutionsData[0].id);
+
+            const tabUsers = document.getElementById('tab-users');
+            const tabDevs = document.getElementById('tab-devs');
+            const contentUsers = document.getElementById('content-users');
+            const contentDevs = document.getElementById('content-devs');
+
+            tabUsers.addEventListener('click', () => {
+                tabUsers.classList.add('active');
+                tabDevs.classList.remove('active');
+                contentUsers.classList.remove('hidden');
+                contentDevs.classList.add('hidden');
+            });
+
+            tabDevs.addEventListener('click', () => {
+                tabDevs.classList.add('active');
+                tabUsers.classList.remove('active');
+                contentDevs.classList.remove('hidden');
+                contentUsers.classList.add('hidden');
+            });
+            
+            tabUsers.classList.add('active');
+
+            const mobileNav = document.getElementById('mobile-nav');
+            mobileNav.addEventListener('change', function() {
+                window.location.hash = this.value;
+            });
+        });
+    </script>
+</body>
+</html>
